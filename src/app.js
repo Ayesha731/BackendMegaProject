@@ -25,5 +25,15 @@ app.use("/api/v1/users", userRoutes);
 
 // http://localhost:8000/api/v1/users/register
 
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error("Error:", err);
+
+  res.status(err.statusCode || 500).json({
+    success: false,
+    message: err.message || "Internal Server Error",
+    errors: err.errors || [],
+  });
+});
 
 export default app;
