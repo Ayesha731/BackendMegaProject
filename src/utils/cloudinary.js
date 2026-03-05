@@ -11,7 +11,7 @@ cloudinary.config({
 });
 
 // Upload function with better error handling
-export const uploadImageToCloudinary = async (localFilePath) => {
+ const uploadImageToCloudinary = async (localFilePath) => {
   try {
     if (!localFilePath) {
       throw new Error("File path is required");
@@ -39,6 +39,22 @@ export const uploadImageToCloudinary = async (localFilePath) => {
     
     throw error;
   }
+
+  //
 };
 
-export default cloudinary;
+
+//upload video to cloudinary
+const uploadVideoToCloudinary = async (localFilePath) => {
+  try {
+    if (!localFilePath) {
+      throw new Error("File path is required");
+    }
+  const response = await cloudinary.uploader.upload(localFilePath, {
+    resource_type: "video",
+  });
+  } catch (error) {
+    throw error;
+  }
+}
+export { uploadImageToCloudinary, uploadVideoToCloudinary };
