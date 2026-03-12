@@ -5,8 +5,10 @@ import authMiddleware from "../middlewares/auth.middleware.js";
 const router = Router();
 //routes declaration
 router.route("/").post(authMiddleware, createPlaylist);
-router.route("/:userId").get(authMiddleware, getUserPlaylists);
+router.route("/user/:userId").get(authMiddleware, getUserPlaylists);
 router.route("/:playlistId").get(authMiddleware, getPlaylistById);
 router.route("/:playlistId").put(authMiddleware, updatePlaylist);
 router.route("/:playlistId").delete(authMiddleware, deletePlaylist);
+router.route("/:playlistId/video/:videoId").post(authMiddleware, addVideoToPlaylist);
+router.route("/:playlistId/video/:videoId").delete(authMiddleware, removeVideoFromPlaylist);
 export default router;

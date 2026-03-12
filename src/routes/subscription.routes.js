@@ -4,8 +4,8 @@ import { subscribeToChannel, unsubscribeFromChannel, getSubscribers, getSubscrip
 import authMiddleware from "../middlewares/auth.middleware.js";
 const router = Router();
 //routes declaration
-router.route("/:channelId").post(authMiddleware, subscribeToChannel);
-router.route("/:channelId").delete(authMiddleware, unsubscribeFromChannel);
-router.route("/:channelId").get(authMiddleware, getSubscribers);
-router.route("/:userId").get(authMiddleware, getSubscriptions);
+router.route("/channel/:channelId").post(authMiddleware, subscribeToChannel);
+router.route("/channel/:channelId").delete(authMiddleware, unsubscribeFromChannel);
+router.route("/channel/:channelId/subscribers").get(authMiddleware, getSubscribers);
+router.route("/user/:userId").get(authMiddleware, getSubscriptions);
 export default router;

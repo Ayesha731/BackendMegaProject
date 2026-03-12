@@ -4,6 +4,7 @@ import ApiError from "../utils/ApiError.js";
 import Video from "../models/video.model.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import { uploadVideoToCloudinary, uploadImageToCloudinary } from "../utils/cloudinary.js";
+import mongoose from "mongoose";
 
 //get all videos
 const getAllVideos = asyncHandler(async (req, res) => {
@@ -11,20 +12,22 @@ const getAllVideos = asyncHandler(async (req, res) => {
     //get the page and limit from the query parameters
     //find the videos
     //return the videos
-    const { page = 1, limit = 10,query,sortBy,sortType,userId } = req.query;
-    const aggregate = Video.aggregate([
-        {
+    const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
+    const pipeline = [];
+    if (query) {
+        pipeline.push({
             $match: {
                 $or: [{ title: { $regex: query, $options: "i" } }, { description: { $regex: query, $options: "i" } }],
             },
-        },
-    ]);
-    if(sortBy && sortType){
-        aggregate.push({ $sort: { [sortBy]: sortType === "asc" ? 1 : -1 } });
+        });
     }
-    if(userId){
-        aggregate.push({ $match: { owner: new mongoose.Types.ObjectId(userId) } });
+    if (userId) {
+        pipeline.push({ $match: { owner: new mongoose.Types.ObjectId(userId) } });
     }
+    if (sortBy && sortType) {
+        pipeline.push({ $sort: { [sortBy]: sortType === "asc" ? 1 : -1 } });
+    }
+    const aggregate = Video.aggregate(pipeline.length ? pipeline : [{ $match: {} }]);
     const videos = await Video.aggregatePaginate(aggregate, { page, limit });
     return res.status(200).json(new ApiResponse(200, videos, "Videos fetched successfully"));
 });
@@ -40,12 +43,20 @@ const publishVideo = asyncHandler(async (req, res) => {
     //calculate the duration of the video from the response of the cloudinary
     //save the duration of the video to the database
     //return the video object
-    const { title,description } = req.body;
-    const videoLocalPath = req.file?.path;
+    if (!req.body) {
+        throw new ApiError(400, "Request body is missing. Please send form data or JSON.");
+    }
+
+    const { title, description } = req.body;
+    if (!title || !description) {
+        throw new ApiError(400, "Title and description are required");
+    }
+
+    const videoLocalPath = req.files?.videoFile?.[0]?.path;
     if(!videoLocalPath){
         throw new ApiError(400, "Video is required");
     }
-    const thumbnailLocalPath = req.file?.path;
+    const thumbnailLocalPath = req.files?.thumbnail?.[0]?.path;
     if(!thumbnailLocalPath){
         throw new ApiError(400, "Thumbnail is required");
     }
@@ -57,7 +68,14 @@ const publishVideo = asyncHandler(async (req, res) => {
     if(!thumbnailResponse){
         throw new ApiError(500, "Something went wrong while uploading thumbnail");
     }
-    const video = await Video.create({ title,description,videoFile: videoResponse.secure_url,thumbnail: thumbnailResponse.secure_url,owner: req.user._id });
+    const video = await Video.create({
+        title,
+        description,
+        videoFile: videoResponse.secure_url,
+        thumbnail: thumbnailResponse.secure_url,
+        duration: videoResponse.duration,
+        owner: req.user._id
+    });
     if(!video){
         throw new ApiError(500, "Something went wrong while publishing video");
     }
@@ -67,12 +85,15 @@ const publishVideo = asyncHandler(async (req, res) => {
 //update a video
 const updateVideo = asyncHandler(async (req, res) => {
     // -------Rules for update video flow-------
-    //get the video id from the request body
-    //find the video
-    //update the video
-    //return the video
-    const { videoId } = req.body;
-    const video = await Video.findByIdAndUpdate(videoId, { title, description }, { new: true });
+    //get the video id from the URL params
+    //get title, description from request body
+    //find the video and update
+    const { videoId } = req.params;
+    const { title, description } = req.body || {};
+    const updateFields = {};
+    if (title !== undefined) updateFields.title = title;
+    if (description !== undefined) updateFields.description = description;
+    const video = await Video.findByIdAndUpdate(videoId, updateFields, { new: true });
     if(!video){
         throw new ApiError(404, "Video not found");
     }
@@ -92,6 +113,7 @@ const getVideoById = asyncHandler(async (req, res) => {
     }
     return res.status(200).json(new ApiResponse(200, video, "Video fetched successfully"));
 });
+
 
 //delete a video
 const deleteVideo = asyncHandler(async (req, res) => {
@@ -116,12 +138,34 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
     //toggle the publish status
     //return the video
     const { videoId } = req.params;
-    const video = await Video.findByIdAndUpdate(videoId, { isPublished: !video.isPublished }, { new: true });
+    const existingVideo = await Video.findById(videoId);
+    if (!existingVideo) {
+        throw new ApiError(404, "Video not found");
+    }
+    const video = await Video.findByIdAndUpdate(
+        videoId,
+        { isPublished: !existingVideo.isPublished },
+        { new: true }
+    );
     if(!video){
         throw new ApiError(404, "Video not found");
     }
     return res.status(200).json(new ApiResponse(200, video, "Publish status toggled successfully"));
 });
 
+//get all videos by user id (owner)
+const getVideosByUserId = asyncHandler(async (req, res) => {
+    const { userId } = req.params;
+    const { page = 1, limit = 10 } = req.query;
+    const aggregate = Video.aggregate([
+        { $match: { owner: new mongoose.Types.ObjectId(userId) } },
+    ]);
+    const videos = await Video.aggregatePaginate(aggregate, { page, limit });
+    return res.status(200).json(new ApiResponse(200, videos, "Videos fetched successfully"));
+});
 
-export { getAllVideos, publishVideo, updateVideo, getVideoById, deleteVideo, togglePublishStatus };
+
+export {
+    getAllVideos, getVideosByUserId, publishVideo, updateVideo, getVideoById, deleteVideo, togglePublishStatus
+    
+ }

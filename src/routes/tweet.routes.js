@@ -5,7 +5,7 @@ import authMiddleware from "../middlewares/auth.middleware.js";
 const router = Router();
 //routes declaration
 router.route("/").post(authMiddleware, createTweet);
-router.route("/:userId").get(authMiddleware, getUserTweets);
+router.route("/user/:userId").get(authMiddleware, getUserTweets);
 router.route("/:tweetId").get(authMiddleware, getTweetById);
 router.route("/:tweetId").put(authMiddleware, updateTweet);
 router.route("/:tweetId").delete(authMiddleware, deleteTweet);

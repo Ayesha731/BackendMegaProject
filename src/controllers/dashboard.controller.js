@@ -146,4 +146,6 @@ const getChannelAnalytics = asyncHandler(async (req, res) => {
     );
 });
 
-export { getChannelStats, getChannelVideos, getTopVideos, getChannelAnalytics };
+export {
+    getChannelStats, getChannelVideos, getTopVideos, getChannelAnalytics
+};

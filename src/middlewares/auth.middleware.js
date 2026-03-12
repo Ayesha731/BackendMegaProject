@@ -14,7 +14,8 @@ const authMiddleware = asyncHandler(async (req, _ , next) => {//_ means we are n
     //if user is not found, then throw an error
     //call the next middleware
 
-    const accessToken = req.cookies?.accessToken || req.headers("Authorization")?.replace("Bearer ","");//we get this from the cookies because we use cookie parser middleware in app.js file
+    const authHeader = req.headers?.authorization || req.headers?.Authorization;
+    const accessToken = req.cookies?.accessToken || authHeader?.replace("Bearer ","");//we get this from the cookies because we use cookie parser middleware in app.js file
     //authorization is a header that is used to send the access token in the headers
     //authorization: Bearer <accessToken>
     //we get the access token from the headers by splitting the string at the space and getting the second element

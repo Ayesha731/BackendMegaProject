@@ -50,11 +50,30 @@ const uploadVideoToCloudinary = async (localFilePath) => {
     if (!localFilePath) {
       throw new Error("File path is required");
     }
-  const response = await cloudinary.uploader.upload(localFilePath, {
-    resource_type: "video",
-  });
+
+    const response = await cloudinary.uploader.upload(localFilePath, {
+      resource_type: "video",
+    });
+
+    // Remove local file after successful upload
+    if (fs.existsSync(localFilePath)) {
+      fs.unlinkSync(localFilePath);
+    }
+    console.log("Video uploaded successfully", response);
+
+    return response;
   } catch (error) {
+    // Attempt to clean up local file on error
+    try {
+      if (fs.existsSync(localFilePath)) {
+        fs.unlinkSync(localFilePath);
+      }
+    } catch (unlinkError) {
+      console.error("Error deleting video file:", unlinkError.message);
+    }
+
     throw error;
   }
-}
+};
+
 export { uploadImageToCloudinary, uploadVideoToCloudinary };

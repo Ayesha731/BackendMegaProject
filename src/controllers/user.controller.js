@@ -5,7 +5,7 @@ import { uploadImageToCloudinary } from "../utils/cloudinary.js"; // Import the 
 import ApiResponse from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 import Video from "../models/video.model.js";
-
+import mongoose from "mongoose";
 
 
 //generate access and refresh token
@@ -119,8 +119,12 @@ const loginUser = asyncHandler(async (req, res) => {
     //generate access token and refresh token
     //send cookies
 
-    const { email, password,username } = req.body;
-    console.log("req.body",req.body)
+    if (!req.body) {
+        throw new ApiError(400, "Request body is missing. Please send JSON or form data.");
+    }
+
+    const { email, password, username } = req.body;
+    console.log("req.body", req.body);
     // Check empty fields
    if(!email && !username) {
     throw new ApiError(400, "Email or username is required");
@@ -214,7 +218,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     //send the access token in the response
     
     
-    const incomingRefreshToken = req.cookies?.refreshToken  ||req.body.refreshToken;//we get this from the cookies because we use cookie parser middleware in app.js file
+    const incomingRefreshToken = req.cookies?.refreshToken  || req.body?.refreshToken;//we get this from the cookies because we use cookie parser middleware in app.js file
     if (!incomingRefreshToken) {
         throw new ApiError(401, "Unauthorized request");
     }
@@ -311,6 +315,14 @@ const getCurrentUser = asyncHandler(async (req, res) => {
     );
 });
 
+//get all users
+const getAllUsers = asyncHandler(async (req, res) => {
+    // -------Rules for get all users flow-------
+    //get the users from the database
+    //return the users
+    const users = await User.find().select("-refreshToken -createdAt -updatedAt");
+    return res.status(200).json(new ApiResponse(200, users, "Users fetched successfully"));
+});
 
 
 //update current user
@@ -549,6 +561,7 @@ export {
     updateUserAvatar,
     updateUserCoverImage,
     getUserChannelProfile,
-    getWatchHistory
+    getWatchHistory,
+    getAllUsers
 
 };
